@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "179479625797",
+    "firebase_url": "https://fireb-notes-default-rtdb.firebaseio.com",
+    "project_id": "fireb-notes",
+    "storage_bucket": "fireb-notes.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:179479625797:android:42be521b2466447d7ba32c",
+        "android_client_info": {
+          "package_name": "com.example.fireb_notes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "179479625797-g73aqvb08mqlrkng6n1nafvt6e3svbu5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHhLDemro8UWGRD0GXUmAEbaSaXt_wrhw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "179479625797-g73aqvb08mqlrkng6n1nafvt6e3svbu5.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "179479625797-lcsr6i9viqpe9raa7qvo5kbd1mdvi56l.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.firebNotes"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
