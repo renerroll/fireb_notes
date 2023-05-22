@@ -247,6 +247,7 @@ class _PostsState extends State<Posts> {
               FloatingActionButton(
                 onPressed: () {
                   showModalBottomSheet(
+                    showDragHandle: true,
                     shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.vertical(
                         top: Radius.circular(20.0),
