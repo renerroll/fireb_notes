@@ -8,7 +8,6 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
-
 class Posts extends StatefulWidget {
   @override
   _PostsState createState() => _PostsState();
@@ -54,6 +53,7 @@ class _PostsState extends State<Posts> {
       setState(() {
         _image = null;
       });
+      _startStream();
     } catch (error) {
       print('Помилка збереження даних: $error');
     }
@@ -64,8 +64,12 @@ class _PostsState extends State<Posts> {
     final imagePath = 'images/$imageName';
 
     try {
-      await firebase_storage.FirebaseStorage.instance.ref(imagePath).putFile(image);
-      final imageUrl = await firebase_storage.FirebaseStorage.instance.ref(imagePath).getDownloadURL();
+      await firebase_storage.FirebaseStorage.instance
+          .ref(imagePath)
+          .putFile(image);
+      final imageUrl = await firebase_storage.FirebaseStorage.instance
+          .ref(imagePath)
+          .getDownloadURL();
       return imageUrl;
     } catch (error) {
       print('Помилка завантаження зображення: $error');
@@ -74,7 +78,10 @@ class _PostsState extends State<Posts> {
   }
 
   void _startStream() {
-    FirebaseFirestore.instance.collection('Stattes').snapshots().listen((snapshot) {
+    FirebaseFirestore.instance
+        .collection('Stattes')
+        .snapshots()
+        .listen((snapshot) {
       _streamController.add(snapshot);
     });
   }
@@ -85,8 +92,20 @@ class _PostsState extends State<Posts> {
     super.dispose();
   }
 
+  Future<void> _deletePost(String postId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('Stattes')
+          .doc(postId)
+          .delete();
+    } catch (error) {
+      print('Помилка видалення поста: $error');
+    }
+  }
+
   Future<void> _getImage() async {
-    final pickedImage = await ImagePicker().getImage(source: ImageSource.gallery);
+    final pickedImage =
+        await ImagePicker().getImage(source: ImageSource.gallery);
     if (pickedImage != null) {
       setState(() {
         _image = File(pickedImage.path);
@@ -99,134 +118,121 @@ class _PostsState extends State<Posts> {
     return Material(
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Пости'),
+          title: const Text('Пости'),
           centerTitle: true,
         ),
         body: SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.all(15),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(15),
           child: Column(
             children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: InputDecoration(labelText: 'Заголовок'),
-              ),
-              TextFormField(
-                controller: _textController,
-                decoration: InputDecoration(labelText: 'Текст'),
-              ),
-              ElevatedButton(
-                onPressed: _saveData,
-                child: Text('Зберегти'),
-              ),
-              ElevatedButton(
-                onPressed: _getImage,
-                child: Text('Додати зображення'),
-              ),
-              if (_image != null) Image.file(_image!),
               StreamBuilder<QuerySnapshot>(
                 stream: _streamController.stream,
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
-                    return Text('Помилка отримання даних з Firestore');
+                    return const Text('Помилка отримання даних з Firestore');
                   }
 
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return CircularProgressIndicator();
+                    return const CircularProgressIndicator();
                   }
 
                   final data = snapshot.data!.docs.reversed.toList();
 
-                  return ListView.separated(
+                  return ListView.builder(
                     shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
+                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: data.length,
-                    separatorBuilder: (context, index) => const SizedBox(
-                      height: 5,
-                    ),
                     itemBuilder: (context, index) {
-                      final post =
-                          data[index].data() as Map<String, dynamic>;
+                      final post = data[index].data() as Map<String, dynamic>;
                       final title = post['title'];
                       final text = post['text'];
                       final date = post['date'] as Timestamp?;
                       final imageUrl = post['image'];
                       final formattedDate = date != null
-                          ? DateFormat('dd MMM, yyyy')
-                              .format(date.toDate())
+                          ? DateFormat('dd MMM, yyyy').format(date.toDate())
                           : 'Невідомо';
                       final formattedTime = date != null
-                          ? DateFormat('HH:mm:ss')
-                              .format(date.toDate())
+                          ? DateFormat('HH:mm:ss').format(date.toDate())
                           : 'Невідомо';
 
-                      return Slidable(
-                        startActionPane: ActionPane(
-                          dismissible: DismissiblePane(onDismissed: () {}),
-                          motion: const ScrollMotion(),
-                           children: [SlidableAction(
-                            flex: 2,
-                            onPressed: (BuildContext context) {},
-                            backgroundColor: Color(0xFFFE4A49),
-                            foregroundColor: Colors.white,
-                            icon: Icons.delete,
-                            label: 'Видалити',)]
-                           ),
-
-                        endActionPane: ActionPane(
-                          motion: const ScrollMotion(),
-                         children: 
-                        [SlidableAction(
-                            flex: 2,
-                            onPressed: (BuildContext context) {},
-                            backgroundColor: Color(0xFFFE4A49),
-                            foregroundColor: Colors.white,
-                            icon: Icons.share,
-                            label: 'Поширити',)]),
-                        
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black26,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          width: double.infinity,
-                          child: ListTile(
-                            title: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        child: Slidable(
+                          key: ValueKey(data[index].id),
+                          startActionPane: ActionPane(
+                              dismissible:
+                                  DismissiblePane(onDismissed: () async {
+                                final postId = data[index].id;
+                                await _deletePost(postId);
+                              }),
+                              motion: const ScrollMotion(),
                               children: [
-                                Text(
-                                  title,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black
+                                SlidableAction(
+                                  flex: 2,
+                                  onPressed: (BuildContext context) {},
+                                  backgroundColor: const Color(0xFFFE4A49),
+                                  foregroundColor: Colors.white,
+                                  icon: Icons.delete,
+                                  label: 'Видалити',
+                                )
+                              ]),
+                          endActionPane: ActionPane(
+                              motion: const ScrollMotion(),
+                              children: [
+                                SlidableAction(
+                                  flex: 2,
+                                  onPressed: (BuildContext context) {},
+                                  backgroundColor:
+                                      Color.fromARGB(255, 0, 242, 255),
+                                  foregroundColor: Colors.white,
+                                  icon: Icons.share,
+                                  label: 'Поширити',
+                                )
+                              ]),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black26,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            width: double.infinity,
+                            child: ListTile(
+                              title: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black),
                                   ),
-                                ),
-                                Text(
-                                  text,
-                                  style: const TextStyle(
-                                    color: Colors.black,
+                                  Text(
+                                    text,
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 5),
-                                if (imageUrl != null)
-                                  Image.network(
-                                    imageUrl,
-                                    width: 100,
-                                    height: 100,
+                                  const SizedBox(height: 5),
+                                  if (imageUrl != null)
+                                    Image.network(
+                                      imageUrl,
+                                      width: 100,
+                                      height: 100,
+                                    ),
+                                  Text(
+                                    'Дата: $formattedDate',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                    ),
                                   ),
-                                Text(
-                                  'Дата: $formattedDate',
-                                  style: TextStyle(
-                                    fontSize: 12,
+                                  Text(
+                                    'Час: $formattedTime',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  'Час: $formattedTime',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -234,6 +240,56 @@ class _PostsState extends State<Posts> {
                     },
                   );
                 },
+              ),
+              const SizedBox(
+                height: 20,
+              ),
+              FloatingActionButton(
+                onPressed: () {
+                  showModalBottomSheet(
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20.0),
+                      ),
+                    ),
+                    context: context,
+                    builder: (BuildContext context) {
+                      return SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Container(
+                          height: MediaQuery.of(context).size.height * 0.8,
+                          padding: const EdgeInsets.all(15),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextFormField(
+                                controller: _titleController,
+                                decoration: const InputDecoration(
+                                    labelText: 'Заголовок', filled: true),
+                              ),
+                              TextFormField(
+                                controller: _textController,
+                                decoration: const InputDecoration(
+                                    labelText: 'Текст', filled: true),
+                              ),
+                              ElevatedButton(
+                                onPressed: _getImage,
+                                child: const Text('Додати зображення'),
+                              ),
+                              if (_image != null) Image.file(_image!),
+
+                              ElevatedButton(
+                                onPressed: _saveData,
+                                child: const Text('Зберегти'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+                child: const Icon(Icons.add),
               ),
             ],
           ),
